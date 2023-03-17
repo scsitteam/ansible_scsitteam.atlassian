@@ -7,11 +7,19 @@
 from __future__ import (absolute_import, division, print_function)
 __metaclass__ = type
 
-from ansible.module_utils.urls import Request
-from ansible.module_utils.six.moves.urllib.parse import urlencode
-from ansible.module_utils.six.moves.urllib.error import HTTPError
+import traceback
 
-import json
+from ansible.module_utils.basic import missing_required_lib
+
+try:
+    import requests
+except ImportError:
+    HAS_ANOTHER_LIBRARY = False
+    ANOTHER_LIBRARY_IMPORT_ERROR = traceback.format_exc()
+else:
+    HAS_ANOTHER_LIBRARY = True
+    ANOTHER_LIBRARY_IMPORT_ERROR = None
+
 from functools import cached_property
 
 
@@ -22,57 +30,42 @@ class AtlassianApi(object):
     def url(self, url):
         pass
 
-    def get(self, url):
-        url = self.url(url)
-        try:
-            return json.loads(self._cli.get(url).read())
-        except HTTPError as e:
-            if e.code == 404:
-                return None
-            data = e.read()
-            try:
-                data = json.loads(data)
-            except json.JSONDecodeError:
-                pass
-            self.module.fail_json(f"Could not get {url} [{e.code}]: {data}")
-        except json.JSONDecodeError as e:
-            self.module.fail_json(f"API returned invalid JSON when trying to get {url}: {str(e)}")
-        except Exception as e:
-            self.module.fail_json(f"Could not get {url}: {str(e)}")
+    def get(self, url, **kwargs):
+        return self._request('GET', url, **kwargs)
 
-    def post(self, url, payload):
+    def post(self, url, **kwargs):
+        return self._request('POST', url, **kwargs)
+
+    def put(self, url, **kwargs):
+        return self._request('PUT', url, **kwargs)
+
+    def _request(self, method, url, **kwargs):
         url = self.url(url)
         try:
-            data = self._cli.post(url, data=json.dumps(payload)).read()
-            if data:
-                return json.loads(data)
-            return None
-        except HTTPError as e:
-            data = e.read()
-            try:
-                data = json.loads(data)
-            except json.JSONDecodeError:
-                pass
-            self.module.fail_json(f"Could not post {url}: {data}")
-        except json.JSONDecodeError as e:
-            self.module.fail_json(f"API returned invalid JSON when trying to post {url}: {str(e)}")
+            resp = self._cli.request(method, url, **kwargs)
+            if resp.status_code == 400:
+                return None
+            resp.raise_for_status()
+            return resp.json()
+        except requests.HTTPError as e:
+            self.module.fail_json(f"Could not {method.upper()} {url}: {str(e)}")
+        except requests.JSONDecodeError as e:
+            self.module.fail_json(f"API returned invalid JSON when trying to {method.upper()} {url}: {str(e)}")
         except Exception as e:
-            self.module.fail_json(f"Could not post {url}: {str(e)}")
+            self.module.fail_json(f"Could not {method.upper()} {url}: {str(e)}")
 
     @cached_property
     def _cli(self):
-        cli = Request(
-            timeout=self.module.params.get('connection_timeout'),
-            validate_certs=self.module.params.get('validate_certs'),
-            http_agent=f"Ansible-{self.module.ansible_version}/{self.module._name}",
-            url_username=self.module.params.get('atlassian_username'),
-            url_password=self.module.params.get('atlassian_password'),
-            force_basic_auth=True,
+        cli = requests.Session()
+        cli.auth = (
+            self.module.params.get('atlassian_username'),
+            self.module.params.get('atlassian_password')
         )
-
         cli.headers.update({
+            'User-Agent': f"Ansible-{self.module.ansible_version}/{self.module._name}",
             'Content-Type': 'application/json'
         })
+        cli.verify = self.module.params.get('validate_certs')
 
         return cli
 
