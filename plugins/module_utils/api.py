@@ -43,7 +43,7 @@ class AtlassianApi(object):
         url = self.url(url)
         try:
             resp = self._cli.request(method, url, **kwargs)
-            if resp.status_code == 400:
+            if resp.status_code == 404:
                 return None
             resp.raise_for_status()
             return resp.json()
