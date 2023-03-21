@@ -78,3 +78,7 @@ class ConfluenceApi(AtlassianApi):
 class JiraPlatformApi(AtlassianApi):
     def url(self, url):
         return f"https://{self.module.params.get('atlassian_instance')}.atlassian.net/rest/{url.lstrip('/')}"
+
+    def get_project_role(self, name):
+        project_roles = self.get("/api/2/role")
+        return next(filter(lambda r: r['name'] == name, project_roles), None)
