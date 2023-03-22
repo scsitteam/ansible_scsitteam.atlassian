@@ -31,6 +31,11 @@ options:
         description:
             - The Username of the Jira Project lead.
         type: str
+    permission_scheme:
+        description:
+            - The name of the permission scheme used to create a new project.
+            - Does not update the active permision scheme.
+        type: str
     state:
         description: State the project role to ensure
         choices: ['present', 'absent']
@@ -60,6 +65,7 @@ def main():
         name=dict(type='str'),
         description=dict(type='str'),
         lead=dict(type='str'),
+        permission_scheme=dict(type='str'),
         state=dict(type='str',
                    default='present',
                    choices=['absent', 'present']),
@@ -85,6 +91,7 @@ def main():
     description = module.params['description']
     state = module.params['state']
     lead = module.params['lead']
+    permission_scheme_name = module.params['permission_scheme']
 
     # Setup API
     api = JiraPlatformApi(module)
@@ -95,6 +102,15 @@ def main():
         if len(leaduser) != 1:
             module.exit_json(msg="Error finding Lead user", **result)
         leaduser = leaduser[0]
+
+    # Get permission scheme
+    if permission_scheme_name:
+        permission_schemes = api.get("/api/3/permissionscheme")['permissionSchemes']
+        permission_scheme = next(filter(lambda p: p['name'] == permission_scheme_name, permission_schemes), None)
+        if permission_scheme is None:
+            module.exit_json(msg=f"Error finding permission scheme '{permission_scheme_name}'", **result)
+    else:
+        permission_scheme = None
 
     # Get current state
     current_project = api.get(f"/api/2/project/{ key }")
@@ -118,6 +134,8 @@ def main():
             projectTypeKey="software",
             projectTemplateKey="com.pyxis.greenhopper.jira:gh-simplified-basic",
         )
+        if permission_scheme:
+            payload['permissionScheme'] = permission_scheme
         result['new_project'] = payload
         if not module.check_mode:
             result['new_project'] = api.post("/api/2/project", payload=payload)
