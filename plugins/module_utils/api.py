@@ -82,7 +82,7 @@ class JiraPlatformApi(AtlassianApi):
     def get_project_role(self, name):
         project_roles = self.get("/api/2/role")
         return next(filter(lambda r: r['name'] == name, project_roles), None)
-        
+
     def get_user(self, name):
         users = self.get(f"/api/3/user/search?query={ name }")
         if len(users) == 1:
@@ -90,5 +90,5 @@ class JiraPlatformApi(AtlassianApi):
         return None
 
     def get_group(self, name):
-        groups = self.get(f"/api/2/groups/picker", params=dict(query=name, property="name"))
+        groups = self.get("/api/2/groups/picker", params=dict(query=name, property="name"))
         return next(filter(lambda g: g['name'] == name, groups["groups"]), None)
