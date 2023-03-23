@@ -6,7 +6,7 @@
 
 DOCUMENTATION = '''
 ---
-module: confluence_space
+module: confluence_space_permission
 
 short_description: Manage Confluence Space
 
@@ -17,21 +17,61 @@ options:
     key:
         description:
             - The Confluence Space key
+        type: str
         required: true
-    name:
+    user:
         description:
-            - The Name of the Confluence space
+            - The Name of the user to grant permissions to.
+        type: str
         required: false
-    description:
+    group:
         description:
-            - The Description of the Confluence space
+            - The Name of the user to grant permissions to.
+        type: str
         required: false
+    permission:
+        description:
+            - Dictionary of permissions to grant or revoke.
+        type: dict
+        suboptions:
+            space:
+                description:
+                    - List of space permissions to grant or revoke.
+                type: list
+                elements: str
+                choices: [read, delete, export, administer, restrict_content]
+            page:
+                description:
+                    - List of space permissions to grant or revoke.
+                type: list
+                elements: str
+                choices: [create, delete, archive]
+            blogpost:
+                description:
+                    - List of space permissions to grant or revoke.
+                type: list
+                elements: str
+                choices: [create, delete]
+            comment:
+                description:
+                    - List of space permissions to grant or revoke.
+                type: list
+                elements: str
+                choices: [create, delete]
+            attachment:
+                description:
+                    - List of space permissions to grant or revoke.
+                type: list
+                elements: str
+                choices: [create, delete]
+
     state:
         description:
             - The desired state of the space
+        type: str
         required: false
-        choices: [ present, absent ]
-        default: present
+        choices: [ grant, revoke, pure ]
+        default: grant
 
 extends_documentation_fragment:
 - scsitteam.atlassian.atlassian
@@ -60,24 +100,22 @@ RETURN = '''
 from ansible_collections.scsitteam.atlassian.plugins.module_utils.module import AnsibleAtlassianModule
 from ansible_collections.scsitteam.atlassian.plugins.module_utils.api import ConfluenceApi
 
+
 def main():
     # define available arguments/parameters a user can pass to the module
     module_args = dict(
-        key=dict(type='str', required=True),
+        key=dict(type='str', required=True, no_log=False),
         # Single permission
         user=dict(type='str'),
         group=dict(type='str'),
         permission=dict(type='dict', default={}, options=dict(
-            space=dict(type='list', default=[], choices=['read', 'delete', 'export', 'administer', 'restrict_content']),
-            page=dict(type='list', default=[], choices=['create', 'delete', 'archive']),
-            blogpost=dict(type='list', default=[], choices=['create', 'delete']),
-            comment=dict(type='list', default=[], choices=['create', 'delete']),
-            attachment=dict(type='list', default=[], choices=['create', 'delete']),
+            space=dict(type='list', default=[], elements='str', choices=['read', 'delete', 'export', 'administer', 'restrict_content']),
+            page=dict(type='list', default=[], elements='str', choices=['create', 'delete', 'archive']),
+            blogpost=dict(type='list', default=[], elements='str', choices=['create', 'delete']),
+            comment=dict(type='list', default=[], elements='str', choices=['create', 'delete']),
+            attachment=dict(type='list', default=[], elements='str', choices=['create', 'delete']),
         )),
-
-        state=dict(type='str',
-                   default='grant',
-                   choices=['grant', 'revoke', 'pure']),
+        state=dict(type='str', default='grant', choices=['grant', 'revoke', 'pure']),
     )
 
     # seed the result dict in the object
@@ -118,7 +156,7 @@ def main():
         current_permissions = [p for p in current_permissions if user in p['subjects'].get('user', [])]
     if group:
         current_permissions = [p for p in current_permissions if group in p['subjects'].get('group', [])]
-    
+
     result['current_permissions'] = current_permissions
 
     # Grant
@@ -131,7 +169,7 @@ def main():
 
         for target, permissions in missing_permissions.items():
             for permission in permissions:
-                payload=dict(
+                payload = dict(
                     operation=dict(
                         key=permission,
                         target=target,
@@ -145,7 +183,7 @@ def main():
                 result['changed'] = True
                 if not module.check_mode:
                     api.post(f"/rest/api/space/{key}/permission", json=payload)
-                
+
         result['missing_permissions'] = missing_permissions
 
     # Pure
@@ -158,8 +196,9 @@ def main():
                 if not module.check_mode:
                     api.delete(f"/rest/api/space/{key}/permission/{permission['id']}")
                 result['additional_permissions'].append(permission)
-    
+
     module.exit_json(**result)
+
 
 if __name__ == '__main__':
     main()

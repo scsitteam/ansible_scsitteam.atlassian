@@ -17,18 +17,22 @@ options:
     key:
         description:
             - The Confluence Space key
+        type: str
         required: true
     name:
         description:
             - The Name of the Confluence space
+        type: str
         required: false
     description:
         description:
             - The Description of the Confluence space
+        type: str
         required: false
     state:
         description:
             - The desired state of the space
+        type: str
         required: false
         choices: [ present, absent ]
         default: present
@@ -45,7 +49,6 @@ EXAMPLES = '''
   confluence_space:
     key: ANSIBLE
     name: Ansible Space
-    private: true
 
 # Delete a space
 - name: Create a space
@@ -60,16 +63,16 @@ RETURN = '''
 from ansible_collections.scsitteam.atlassian.plugins.module_utils.module import AnsibleAtlassianModule
 from ansible_collections.scsitteam.atlassian.plugins.module_utils.api import ConfluenceApi
 
+
 def main():
     # define available arguments/parameters a user can pass to the module
     module_args = dict(
-        key=dict(type='str', required=True),
+        key=dict(type='str', required=True, no_log=False),
         name=dict(type='str'),
         description=dict(type='str'),
         state=dict(type='str',
                    default='present',
                    choices=['absent', 'present']),
-        private=dict(type='bool', default=False),
     )
 
     # seed the result dict in the object
@@ -95,7 +98,7 @@ def main():
     # Get current state
     spaces = api.get("/api/v2/spaces", params={"description-format": "plain"})
     current_space = next(filter(lambda s: s['key'] == key, spaces['results']), None)
-    
+
     result['space'] = current_space
 
     # Delete
@@ -103,7 +106,7 @@ def main():
         result['changed'] = True
         new_space = {}
         if not module.check_mode:
-             api.delete(f"/rest/api/space/{current_space['id']}")
+            api.delete(f"/rest/api/space/{current_space['id']}")
 
     # Create
     if state == 'present' and current_space is None:
@@ -140,13 +143,13 @@ def main():
             new_space = current_space.copy()
             new_space.update(update)
 
-
     result['current_space'] = current_space
     # Diff
     if result['changed'] and module._diff:
         result['diff'] = dict(before=current_space, after=new_space)
-    
+
     module.exit_json(**result)
+
 
 if __name__ == '__main__':
     main()
