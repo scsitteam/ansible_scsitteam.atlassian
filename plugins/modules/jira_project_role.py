@@ -36,18 +36,11 @@ author:
 '''
 
 EXAMPLES = '''
-# Create a space
-- name: Create a space
-  confluence_space:
-    key: ANSIBLE
-    name: Ansible Space
-    private: true
-
-# Delete a space
-- name: Create a space
-  confluence_space:
-    state: absent
-    key: ANSIBLE
+# Create a project role
+- name: Create Jira project Role
+  jira_project_role:
+    name: Ansible Dev
+    description: Ansible Developer
 '''
 
 RETURN = '''
@@ -90,8 +83,7 @@ def main():
     api = JiraPlatformApi(module)
 
     # Get current state
-    project_roles = api.get("/api/2/role")
-    current_project_role = next(filter(lambda r: r['name'] == name, project_roles), None)
+    current_project_role = api.get_project_role(name)
 
     # Delete
     if state == 'absent' and current_project_role is not None:
