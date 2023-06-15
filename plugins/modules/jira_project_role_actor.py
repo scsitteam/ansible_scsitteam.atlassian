@@ -29,11 +29,13 @@ options:
         type: list
         elements: str
         aliases: [ 'user' ]
+        default: []
     groups:
         description: Groups to grant the role to
         type: list
         elements: str
         aliases: [ 'group' ]
+        default: []
     state:
         description: State of the project role for the subjects.
         choices: ['present', 'absent', 'pure']
