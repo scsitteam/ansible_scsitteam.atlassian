@@ -9,8 +9,6 @@ __metaclass__ = type
 
 import traceback
 
-from ansible.module_utils.basic import missing_required_lib
-
 try:
     import requests
 except ImportError:
@@ -39,11 +37,16 @@ class AtlassianApi(object):
     def put(self, url, **kwargs):
         return self._request('PUT', url, **kwargs)
 
+    def delete(self, url, **kwargs):
+        return self._request('DELETE', url, **kwargs)
+
     def _request(self, method, url, **kwargs):
         url = self.url(url)
         try:
             resp = self._cli.request(method, url, **kwargs)
             if resp.status_code == 404:
+                return None
+            if resp.status_code == 204:
                 return None
             resp.raise_for_status()
             return resp.json()
@@ -63,7 +66,6 @@ class AtlassianApi(object):
         )
         cli.headers.update({
             'User-Agent': f"Ansible-{self.module.ansible_version}/{self.module._name}",
-            'Content-Type': 'application/json'
         })
         cli.verify = self.module.params.get('validate_certs')
 
@@ -92,3 +94,13 @@ class JiraPlatformApi(AtlassianApi):
     def get_group(self, name):
         groups = self.get("/api/2/groups/picker", params=dict(query=name, property="name"))
         return next(filter(lambda g: g['name'] == name, groups["groups"]), None)
+
+
+class BitbucketApi(AtlassianApi):
+    def url(self, url):
+        return f"https://api.bitbucket.org/2.0/workspaces/{self.module.params.get('atlassian_instance')}/{url.lstrip('/')}"
+
+
+class BitbucketLegacyApi(AtlassianApi):
+    def url(self, url):
+        return f"https://api.bitbucket.org/1.0/{url.lstrip('/')}".replace('{workspace_id}', self.module.params.get('atlassian_instance'))

@@ -40,30 +40,36 @@ options:
                 type: list
                 elements: str
                 choices: [read, delete, export, administer, restrict_content]
+                default: []
             page:
                 description:
                     - List of space permissions to grant or revoke.
                 type: list
                 elements: str
                 choices: [create, delete, archive]
+                default: []
             blogpost:
                 description:
                     - List of space permissions to grant or revoke.
                 type: list
                 elements: str
                 choices: [create, delete]
+                default: []
             comment:
                 description:
                     - List of space permissions to grant or revoke.
                 type: list
                 elements: str
                 choices: [create, delete]
+                default: []
             attachment:
                 description:
                     - List of space permissions to grant or revoke.
                 type: list
                 elements: str
                 choices: [create, delete]
+                default: []
+        default: {}
 
     state:
         description:
