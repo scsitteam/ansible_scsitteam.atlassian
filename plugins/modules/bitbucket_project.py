@@ -172,7 +172,7 @@ def main():
         update = {}
         if name != current_project['name']:
             update['name'] = name
-        if description != current_project['description']:
+        if description and description != current_project['description']:
             update['description'] = description
         if is_private != current_project['is_private']:
             update['is_private'] = is_private
