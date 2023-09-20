@@ -96,7 +96,7 @@ def main():
     api = ConfluenceApi(module)
 
     # Get current state
-    spaces = api.get("/api/v2/spaces", params={"description-format": "plain"})
+    spaces = api.get("/api/v2/spaces", params={"description-format": "plain", "keys": key})
     current_space = next(filter(lambda s: s['key'] == key, spaces['results']), None)
 
     result['space'] = current_space
