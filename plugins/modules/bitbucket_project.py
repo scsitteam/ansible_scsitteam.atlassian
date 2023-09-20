@@ -27,6 +27,11 @@ options:
         description:
             - The Description of the Bitbucket project
         type: str
+    is_private:
+        description:
+            - If the project is private or not.
+        default: True
+        type: bool
     group_permission:
         description:
             - Bitbucker Projects Group permissions
@@ -41,11 +46,12 @@ options:
                     group:
                         description:
                             - The Name of the group to give permissions to
+                        required: true
                         type: str
                     permission:
                         description: Permission to grant
                         choices: ['read', 'write', 'create-repo', 'admin']
-                        default: read
+                        required: true
                         type: str
             add:
                 description:
@@ -56,11 +62,12 @@ options:
                     group:
                         description:
                             - The Name of the group to give permissions to
+                        required: true
                         type: str
                     permission:
                         description: Permission to grant
                         choices: ['read', 'write', 'create-repo', 'admin']
-                        default: read
+                        required: true
                         type: str
             remove:
                 description:
@@ -98,14 +105,14 @@ def main():
         is_private=dict(type='bool', default=True),
         group_permission=dict(type='dict', default=None, options=dict(
             set=dict(type='list', elements='dict', options=dict(
-                group=dict(type='str', reqired=True),
-                permission=dict(type='str', reqired=True, choices=['read', 'write', 'create-repo', 'admin']),
+                group=dict(type='str', required=True),
+                permission=dict(type='str', required=True, choices=['read', 'write', 'create-repo', 'admin']),
             )),
             add=dict(type='list', elements='dict', options=dict(
-                group=dict(type='str', reqired=True),
-                permission=dict(type='str', reqired=True, choices=['read', 'write', 'create-repo', 'admin']),
+                group=dict(type='str', required=True),
+                permission=dict(type='str', required=True, choices=['read', 'write', 'create-repo', 'admin']),
             )),
-            remove=dict(type='list'),
+            remove=dict(type='list', elements='str'),
         ), mutually_exclusive=[['set', 'add'], ['set', 'remove']]),
         state=dict(type='str',
                    default='present',
@@ -122,7 +129,7 @@ def main():
         argument_spec=module_args,
         supports_check_mode=True,
         required_if=[
-            ('state', 'present', ('name', 'lead'), True),
+            ('state', 'present', ('name',)),
         ]
     )
 
@@ -163,7 +170,6 @@ def main():
     # Update
     if state == 'present' and current_project is not None:
         update = {}
-        
         if name != current_project['name']:
             update['name'] = name
         if description != current_project['description']:
@@ -181,28 +187,31 @@ def main():
         else:
             new_project = current_project.copy()
             new_project.update(update)
-    
+
     if state == 'present' and group_permission is not None:
-        current_project['group_permission'] = {p['group']['name']: p['permission'] for p in api.get(f"/projects/{key}/permissions-config/groups")['values']}
-        new_project['group_permission'] = current_project['group_permission'].copy()
+        if current_project is not None:
+            current_group_permission = {p['group']['name']: p['permission'] for p in api.get(f"/projects/{key}/permissions-config/groups")['values']}
+            current_project['group_permission'] = current_group_permission
+        else:
+            current_group_permission = {}
+        new_project['group_permission'] = current_group_permission.copy()
 
         if group_permission['set']:
             for perm in group_permission['set']:
-                if current_project['group_permission'].get(perm['group'], None) != perm['permission']:
+                if current_group_permission.get(perm['group'], None) != perm['permission']:
                     result['changed'] = True
                     new_project['group_permission'][perm['group']] = perm['permission']
                     if not module.check_mode:
                         api.put(f"/projects/{key}/permissions-config/groups/{perm['group']}", json=dict(permission=perm['permission']))
-            for group in current_project['group_permission'].keys():
+            for group in current_group_permission.keys():
                 if group not in [p['group'] for p in group_permission['set']]:
                     del new_project['group_permission'][group]
                     if not module.check_mode:
                         api.delete(f"/projects/{key}/permissions-config/groups/{group}")
 
-
         if group_permission['add']:
             for perm in group_permission['add']:
-                if current_project['group_permission'].get(perm['group'], None) != perm['permission']:
+                if current_group_permission.get(perm['group'], None) != perm['permission']:
                     result['changed'] = True
                     new_project['group_permission'][perm['group']] = perm['permission']
                     if not module.check_mode:
@@ -210,7 +219,7 @@ def main():
 
         if group_permission['remove']:
             for perm in group_permission['remove']:
-                if current_project['group_permission'].get(perm['group'], None) != None:
+                if current_group_permission.get(perm['group'], None) is not None:
                     result['changed'] = True
                     del new_project['group_permission'][perm['group']]
                     if not module.check_mode:

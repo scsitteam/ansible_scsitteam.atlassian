@@ -6,7 +6,7 @@ __metaclass__ = type
 
 DOCUMENTATION = '''
 ---
-module: bitbucket_project
+module: bitbucket_group
 
 short_description: Manage Bitbucket Groups
 
@@ -17,6 +17,7 @@ options:
     name:
         description:
             - The Name of the Bitbucket Group.
+        required: true
         type: str
     state:
         description: State the project role to ensure
@@ -58,9 +59,6 @@ def main():
     module = AnsibleAtlassianModule(
         argument_spec=module_args,
         supports_check_mode=True,
-        required_if=[
-            ('state', 'present', ('name', 'lead'), True),
-        ]
     )
 
     # Parameters
@@ -71,7 +69,7 @@ def main():
     api = BitbucketLegacyApi(module)
 
     # Get current state
-    current_group = {g['name']: g for g in api.get(f"/groups/{{workspace_id}}/")}.get(name, None)
+    current_group = {g['name']: g for g in api.get("/groups/{workspace_id}/")}.get(name, None)
     result['current_group'] = current_group
 
     # Delete

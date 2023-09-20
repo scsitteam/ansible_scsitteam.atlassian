@@ -9,8 +9,6 @@ __metaclass__ = type
 
 import traceback
 
-from ansible.module_utils.basic import missing_required_lib
-
 try:
     import requests
 except ImportError:

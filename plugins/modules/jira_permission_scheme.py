@@ -475,6 +475,7 @@ options:
                     value:
                         description: Value to Identify whi this permissions are granted to.
                         type: str
+        default: {}
 
 extends_documentation_fragment:
 - scsitteam.atlassian.atlassian

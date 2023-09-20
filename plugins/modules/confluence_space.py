@@ -104,9 +104,14 @@ def main():
     # Delete
     if state == 'absent' and current_space is not None:
         result['changed'] = True
+
+        pages = api.get(f"/api/v2/spaces/{current_space['id']}/pages")['results']
+        if pages:
+            module.fail_json(msg="The Space is not empty", pages=[p['title'] for p in pages], **result)
         new_space = {}
         if not module.check_mode:
-            api.delete(f"/rest/api/space/{current_space['id']}")
+            ret = api.delete(f"/rest/api/space/{key}")
+            result['ret'] = ret
 
     # Create
     if state == 'present' and current_space is None:
