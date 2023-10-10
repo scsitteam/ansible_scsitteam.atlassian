@@ -108,7 +108,8 @@ def main():
         permission_schemes = api.get("/api/3/permissionscheme")['permissionSchemes']
         permission_scheme = next(filter(lambda p: p['name'] == permission_scheme_name, permission_schemes), None)
         if permission_scheme is None:
-            module.fail_json(msg=f"Error finding permission scheme '{permission_scheme_name}'", permission_schemes=[p['name'] for p in permission_schemes], **result)
+            module.fail_json(msg=f"Error finding permission scheme '{permission_scheme_name}'",
+                             permission_schemes=[p['name'] for p in permission_schemes], **result)
     else:
         permission_scheme = None
 

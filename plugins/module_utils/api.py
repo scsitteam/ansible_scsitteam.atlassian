@@ -100,6 +100,7 @@ class BitbucketApi(AtlassianApi):
     def url(self, url):
         return f"https://api.bitbucket.org/2.0/workspaces/{self.module.params.get('atlassian_instance')}/{url.lstrip('/')}"
 
+
 class BitbucketLegacyApi(AtlassianApi):
     def url(self, url):
         return f"https://api.bitbucket.org/1.0/{url.lstrip('/')}".replace('{workspace_id}', self.module.params.get('atlassian_instance'))
