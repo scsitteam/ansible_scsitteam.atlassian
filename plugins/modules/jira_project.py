@@ -108,7 +108,7 @@ def main():
         permission_schemes = api.get("/api/3/permissionscheme")['permissionSchemes']
         permission_scheme = next(filter(lambda p: p['name'] == permission_scheme_name, permission_schemes), None)
         if permission_scheme is None:
-            module.exit_json(msg=f"Error finding permission scheme '{permission_scheme_name}'", **result)
+            module.fail_json(msg=f"Error finding permission scheme '{permission_scheme_name}'", permission_schemes=[p['name'] for p in permission_schemes], **result)
     else:
         permission_scheme = None
 
@@ -139,10 +139,10 @@ def main():
             projectTemplateKey="com.pyxis.greenhopper.jira:gh-simplified-basic",
         )
         if permission_scheme:
-            payload['permissionScheme'] = permission_scheme
+            payload['permissionScheme'] = permission_scheme['id']
         result['new_project'] = payload
         if not module.check_mode:
-            result['new_project'] = api.post("/api/2/project", payload=payload)
+            result['new_project'] = api.post("/api/2/project", json=payload)
 
     # Update
     if state == 'present' and current_project is not None:
@@ -157,7 +157,7 @@ def main():
         if payload:
             result['changed'] = True
             if not module.check_mode:
-                new_project = api.put(f"/api/2/project/{key}", payload=payload)
+                new_project = api.put(f"/api/2/project/{key}", json=payload)
             else:
                 new_project = current_project.copy()
                 new_project.update(payload)
