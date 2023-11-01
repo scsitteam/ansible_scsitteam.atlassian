@@ -100,7 +100,7 @@ def main():
     if lead:
         leaduser = api.get(f"/api/3/user/search?query={ lead }")
         if len(leaduser) != 1:
-            module.exit_json(msg="Error finding Lead user", **result)
+            module.fail_json(msg="Error finding Lead user", **result)
         leaduser = leaduser[0]
 
     # Get permission scheme
