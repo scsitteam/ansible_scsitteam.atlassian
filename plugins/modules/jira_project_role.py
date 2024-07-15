@@ -83,7 +83,7 @@ def main():
     api = JiraPlatformApi(module)
 
     # Get current state
-    current_project_role = api.get_project_role(name)
+    current_project_role = api.get_role(name)
 
     # Delete
     if state == 'absent' and current_project_role is not None:

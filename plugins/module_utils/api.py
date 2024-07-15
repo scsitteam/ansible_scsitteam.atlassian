@@ -51,7 +51,7 @@ class AtlassianApi(object):
             resp.raise_for_status()
             return resp.json()
         except requests.HTTPError as e:
-            self.module.fail_json(f"Could not {method.upper()} {url}: {str(e)}")
+            self.module.fail_json(f"Could not {method.upper()} {url}: {str(e)}", test=e.response.text)
         except requests.JSONDecodeError as e:
             self.module.fail_json(f"API returned invalid JSON when trying to {method.upper()} {url}: {str(e)}")
         except Exception as e:
@@ -81,9 +81,16 @@ class JiraPlatformApi(AtlassianApi):
     def url(self, url):
         return f"https://{self.module.params.get('atlassian_instance')}.atlassian.net/rest/{url.lstrip('/')}"
 
-    def get_project_role(self, name):
-        project_roles = self.get("/api/2/role")
-        return next(filter(lambda r: r['name'] == name, project_roles), None)
+    def get_role(self, name):
+        roles = self.get("/api/2/role")
+        return next(filter(lambda r: r['name'] == name, roles), None)
+
+    def get_project_role(self, project, role):
+        project_roles = self.get(f"/api/2/project/{project}/role")
+        if role not in project_roles:
+            return
+        url = project_roles[role].split('/', 4)[-1]
+        return self.get(url)
 
     def get_user(self, name):
         users = self.get(f"/api/3/user/search?query={ name }")

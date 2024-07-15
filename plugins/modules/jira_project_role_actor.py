@@ -98,15 +98,14 @@ def main():
 
     # Parameters
     project_key = module.params['project_key']
-    role = api.get_project_role(module.params['role'])
+    role = api.get_project_role(project_key, module.params['role'])
     if not role:
         module.fail_json(f"Role '{module.params['role']}' not found.")
     state = module.params['state']
 
     # Get current state
-    current_project_role_actors = api.get(f"/api/2/project/{project_key}/role/{role['id']}")
-    current_groups = {a['actorGroup']['groupId']: a['name'] for a in current_project_role_actors['actors'] if a['type'] == 'atlassian-group-role-actor'}
-    current_users = {a['actorUser']['accountId']: a['displayName'] for a in current_project_role_actors['actors'] if a['type'] == 'atlassian-user-role-actor'}
+    current_groups = {a['actorGroup']['groupId']: a['name'] for a in role['actors'] if a['type'] == 'atlassian-group-role-actor'}
+    current_users = {a['actorUser']['accountId']: a['displayName'] for a in role['actors'] if a['type'] == 'atlassian-user-role-actor'}
     result['current_groups'] = current_groups
     result['current_users'] = current_users
 
