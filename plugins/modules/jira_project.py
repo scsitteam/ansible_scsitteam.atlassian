@@ -36,6 +36,10 @@ options:
             - The name of the permission scheme used to create a new project.
             - Does not update the active permision scheme.
         type: str
+    template:
+        description: Project template to use
+        default: com.pyxis.greenhopper.jira:gh-simplified-basic
+        type: str
     state:
         description: State the project role to ensure
         choices: ['present', 'absent']
@@ -69,6 +73,7 @@ def main():
         state=dict(type='str',
                    default='present',
                    choices=['absent', 'present']),
+        template=dict(type='str', default='com.pyxis.greenhopper.jira:gh-simplified-basic')
     )
 
     # seed the result dict in the object
@@ -92,6 +97,7 @@ def main():
     state = module.params['state']
     lead = module.params['lead']
     permission_scheme_name = module.params['permission_scheme']
+    template = module.params['template']
 
     # Setup API
     api = JiraPlatformApi(module)
@@ -137,7 +143,7 @@ def main():
             description=description,
             leadAccountId=leaduser['accountId'],
             projectTypeKey="software",
-            projectTemplateKey="com.pyxis.greenhopper.jira:gh-simplified-basic",
+            projectTemplateKey=template,
         )
         if permission_scheme:
             payload['permissionScheme'] = permission_scheme['id']
