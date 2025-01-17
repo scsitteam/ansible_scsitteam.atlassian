@@ -36,6 +36,11 @@ options:
             - The name of the permission scheme used to create a new project.
             - Does not update the active permision scheme.
         type: str
+    notification_scheme:
+        description:
+            - The name of the notification scheme used to create a new project.
+            - Does not update the active notification scheme.
+        type: str
     template:
         description: Project template to use
         default: com.pyxis.greenhopper.jira:gh-simplified-basic
