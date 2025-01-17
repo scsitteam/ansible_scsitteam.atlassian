@@ -70,6 +70,7 @@ def main():
         description=dict(type='str'),
         lead=dict(type='str'),
         permission_scheme=dict(type='str'),
+        notification_scheme=dict(type='str'),
         state=dict(type='str',
                    default='present',
                    choices=['absent', 'present']),
@@ -97,6 +98,7 @@ def main():
     state = module.params['state']
     lead = module.params['lead']
     permission_scheme_name = module.params['permission_scheme']
+    notification_scheme_name = module.params['notification_scheme']
     template = module.params['template']
 
     # Setup API
@@ -118,6 +120,20 @@ def main():
                              permission_schemes=[p['name'] for p in permission_schemes], **result)
     else:
         permission_scheme = None
+
+    # Get notification scheme
+    if notification_scheme_name:
+        startat=0
+        while True:
+            page = api.get(f"/api/3/notificationscheme?startAt={startat}")
+            notification_schemes = notification_schemes['values']
+            notification_scheme = next(filter(lambda p: p['name'] == notification_scheme_name, notification_schemes), None)
+            if notification_scheme is None and page['isLast']:
+                module.fail_json(msg=f"Error finding permission scheme '{notification_scheme_name}'",
+                             notification_scheme=[p['name'] for p in notification_schemes], **result)
+            startat += page['maxResults']
+    else:
+        notification_scheme = None
 
     # Get current state
     current_project = api.get(f"/api/2/project/{ key }")
@@ -147,6 +163,8 @@ def main():
         )
         if permission_scheme:
             payload['permissionScheme'] = permission_scheme['id']
+        if notification_scheme:
+            payload['notificationScheme'] = notification_scheme['id']
         result['new_project'] = payload
         if not module.check_mode:
             result['new_project'] = api.post("/api/2/project", json=payload)
