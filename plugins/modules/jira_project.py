@@ -128,14 +128,14 @@ def main():
 
     # Get notification scheme
     if notification_scheme_name:
-        startat=0
+        startat = 0
         while True:
             page = api.get(f"/api/3/notificationscheme?startAt={startat}")
-            notification_schemes = notification_schemes['values']
+            notification_schemes = page['values']
             notification_scheme = next(filter(lambda p: p['name'] == notification_scheme_name, notification_schemes), None)
             if notification_scheme is None and page['isLast']:
                 module.fail_json(msg=f"Error finding permission scheme '{notification_scheme_name}'",
-                             notification_scheme=[p['name'] for p in notification_schemes], **result)
+                                 notification_scheme=[p['name'] for p in notification_schemes], **result)
             startat += page['maxResults']
     else:
         notification_scheme = None
