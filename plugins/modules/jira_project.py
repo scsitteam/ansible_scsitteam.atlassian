@@ -147,7 +147,7 @@ def main():
     if state == 'absent' and current_project is not None:
         issues = api.get(f"/api/2/search?jql=project%20%3D%20{ key }")
         if issues['total'] > 0:
-            module.fail_json(msg="The Project is not empty", issues=[i['key'] for i in issues], **result)
+            module.fail_json(msg="The Project is not empty", issues=[i['key'] for i in issues['issues']], **result)
 
         result['changed'] = True
         new_project = {}
