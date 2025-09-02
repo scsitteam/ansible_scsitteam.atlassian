@@ -133,9 +133,11 @@ def main():
             page = api.get(f"/api/3/notificationscheme?startAt={startat}")
             notification_schemes = page['values']
             notification_scheme = next(filter(lambda p: p['name'] == notification_scheme_name, notification_schemes), None)
-            if notification_scheme is None and page['isLast']:
+            if notification_scheme is not None:
+                break
+            if page['isLast']:
                 module.fail_json(msg=f"Error finding permission scheme '{notification_scheme_name}'",
-                                 notification_scheme=[p['name'] for p in notification_schemes], **result)
+                                 notification_scheme=[p['name'] for p in notification_schemes], **result, page=page)
             startat += page['maxResults']
     else:
         notification_scheme = None
@@ -147,7 +149,7 @@ def main():
     if state == 'absent' and current_project is not None:
         issues = api.get(f"/api/3/search/jql?jql=project%20%3D%20{ key }")
         if issues['total'] > 0:
-            module.fail_json(msg="The Project is not empty", issues=[i['key'] for i in issues], **result)
+            module.fail_json(msg="The Project is not empty", issues=[i['key'] for i in issues['issues']], **result)
 
         result['changed'] = True
         new_project = {}
