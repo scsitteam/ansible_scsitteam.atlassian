@@ -97,7 +97,10 @@ def main():
 
     # Get current state
     spaces = api.get("/api/v2/spaces", params={"description-format": "plain", "keys": key})
-    current_space = next(filter(lambda s: s['key'] == key, spaces['results']), None)
+    if spaces is not None and 'results' in spaces:
+        current_space = next(filter(lambda s: s['key'] == key, spaces['results']), None)
+    else:
+        current_space = None
 
     result['space'] = current_space
 
